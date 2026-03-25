@@ -46,6 +46,27 @@ module tb_game_state;
         end
     endtask
 
+    task seed_state_and_tick;
+        input [9:0] seed_x;
+        input [9:0] seed_y;
+        input signed [10:0] seed_vy;
+        input seed_left;
+        input seed_right;
+        input seed_up;
+        begin
+            uut.player_x = seed_x;
+            uut.player_y = seed_y;
+            uut.player_vy = seed_vy;
+            btn_left = seed_left;
+            btn_right = seed_right;
+            btn_up = seed_up;
+            pulse_frame_tick;
+            btn_left = 1'b0;
+            btn_right = 1'b0;
+            btn_up = 1'b0;
+        end
+    endtask
+
     initial begin
         $dumpfile("game_state.vcd");
         $dumpvars(0, tb_game_state);
@@ -174,6 +195,32 @@ module tb_game_state;
 
         if (uut.player_vy !== 0) begin
             $display("FAIL: vertical velocity should be zero after landing, got %0d", uut.player_vy);
+            errors = errors + 1;
+        end
+
+        seed_state_and_tick(10'd180, 10'd303, 11'sd10, 1'b0, 1'b0, 1'b0);
+        if (player_y !== 10'd312) begin
+            $display("FAIL: platform landing expected y=312, got %0d", player_y);
+            errors = errors + 1;
+        end
+        if (uut.player_vy !== 0) begin
+            $display("FAIL: platform landing should clear vertical velocity, got %0d", uut.player_vy);
+            errors = errors + 1;
+        end
+
+        seed_state_and_tick(10'd180, 10'd372, -11'sd8, 1'b0, 1'b0, 1'b0);
+        if (player_y !== 10'd368) begin
+            $display("FAIL: underside collision expected y=368, got %0d", player_y);
+            errors = errors + 1;
+        end
+        if (uut.player_vy !== 0) begin
+            $display("FAIL: underside collision should clear vertical velocity, got %0d", uut.player_vy);
+            errors = errors + 1;
+        end
+
+        seed_state_and_tick(10'd133, 10'd320, 11'sd0, 1'b0, 1'b1, 1'b0);
+        if (player_x !== 10'd136) begin
+            $display("FAIL: platform side collision expected x=136, got %0d", player_x);
             errors = errors + 1;
         end
 

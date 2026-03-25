@@ -18,30 +18,94 @@ module game_state (
     localparam [9:0] PLAYER_WIDTH   = 10'd24;
     localparam [9:0] PLAYER_HEIGHT  = 10'd32;
     localparam [9:0] SCREEN_WIDTH   = 10'd640;
-    localparam [9:0] GROUND_TOP_Y   = 10'd432;
-    localparam [9:0] GROUND_Y       = GROUND_TOP_Y - PLAYER_HEIGHT;
     localparam [9:0] MOVE_STEP      = 10'd4;
     localparam [9:0] PLAYER_MAX_X   = SCREEN_WIDTH - PLAYER_WIDTH;
     localparam integer GRAVITY_ACCEL = 1;
     localparam integer JUMP_VELOCITY = -12;
     localparam integer MAX_FALL_SPEED = 12;
 
+    wire [9:0] ground_x;
+    wire [9:0] ground_y;
+    wire [9:0] ground_w;
+    wire [9:0] ground_h;
+    wire [9:0] platform0_x;
+    wire [9:0] platform0_y;
+    wire [9:0] platform0_w;
+    wire [9:0] platform0_h;
+    wire [9:0] platform1_x;
+    wire [9:0] platform1_y;
+    wire [9:0] platform1_w;
+    wire [9:0] platform1_h;
+    wire [9:0] goal_x;
+    wire [9:0] goal_y;
+    wire [9:0] goal_w;
+    wire [9:0] goal_h;
+
     reg signed [10:0] player_vy;
     integer next_x;
     integer next_y;
     integer next_vy;
+    integer player_right_now;
+    integer player_bottom_now;
+    integer player_right_next;
+    integer player_bottom_next;
+    integer ground_player_y;
+    reg standing_on_ground;
+    reg standing_on_platform0;
+    reg standing_on_platform1;
+    reg grounded_now;
+
+    scene_layout u_scene_layout (
+        .ground_x(ground_x),
+        .ground_y(ground_y),
+        .ground_w(ground_w),
+        .ground_h(ground_h),
+        .platform0_x(platform0_x),
+        .platform0_y(platform0_y),
+        .platform0_w(platform0_w),
+        .platform0_h(platform0_h),
+        .platform1_x(platform1_x),
+        .platform1_y(platform1_y),
+        .platform1_w(platform1_w),
+        .platform1_h(platform1_h),
+        .goal_x(goal_x),
+        .goal_y(goal_y),
+        .goal_w(goal_w),
+        .goal_h(goal_h)
+    );
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             player_x <= PLAYER_START_X;
-            player_y <= GROUND_Y;
+            player_y <= PLAYER_START_Y;
             player_w <= PLAYER_WIDTH;
             player_h <= PLAYER_HEIGHT;
             player_vy <= 11'sd0;
         end else if (frame_tick) begin
+            ground_player_y = ground_y - PLAYER_HEIGHT;
             next_x  = player_x;
             next_y  = player_y;
             next_vy = player_vy;
+            player_right_now = player_x + PLAYER_WIDTH;
+            player_bottom_now = player_y + PLAYER_HEIGHT;
+
+            standing_on_ground =
+                (player_y == ground_player_y);
+
+            standing_on_platform0 =
+                (player_y == (platform0_y - PLAYER_HEIGHT)) &&
+                (player_x < platform0_x + platform0_w) &&
+                (player_right_now > platform0_x);
+
+            standing_on_platform1 =
+                (player_y == (platform1_y - PLAYER_HEIGHT)) &&
+                (player_x < platform1_x + platform1_w) &&
+                (player_right_now > platform1_x);
+
+            grounded_now =
+                standing_on_ground ||
+                standing_on_platform0 ||
+                standing_on_platform1;
 
             if (btn_left && !btn_right) begin
                 if (next_x > MOVE_STEP) begin
@@ -57,26 +121,87 @@ module game_state (
                 end
             end
 
-            if (next_y >= GROUND_Y) begin
-                next_y = GROUND_Y;
-                next_vy = 0;
-
-                if (btn_up) begin
-                    next_vy = JUMP_VELOCITY;
-                    next_y = GROUND_Y + JUMP_VELOCITY;
+            if ((player_y < platform0_y + platform0_h) &&
+                (player_bottom_now > platform0_y)) begin
+                if ((player_right_now <= platform0_x) &&
+                    (next_x + PLAYER_WIDTH > platform0_x)) begin
+                    next_x = platform0_x - PLAYER_WIDTH;
                 end
+
+                if ((player_x >= platform0_x + platform0_w) &&
+                    (next_x < platform0_x + platform0_w)) begin
+                    next_x = platform0_x + platform0_w;
+                end
+            end
+
+            if ((player_y < platform1_y + platform1_h) &&
+                (player_bottom_now > platform1_y)) begin
+                if ((player_right_now <= platform1_x) &&
+                    (next_x + PLAYER_WIDTH > platform1_x)) begin
+                    next_x = platform1_x - PLAYER_WIDTH;
+                end
+
+                if ((player_x >= platform1_x + platform1_w) &&
+                    (next_x < platform1_x + platform1_w)) begin
+                    next_x = platform1_x + platform1_w;
+                end
+            end
+
+            if (grounded_now && btn_up) begin
+                next_vy = JUMP_VELOCITY;
+                next_y = player_y + JUMP_VELOCITY;
             end else begin
                 next_y = next_y + next_vy;
-                next_vy = next_vy + GRAVITY_ACCEL;
+
+                if (!grounded_now || (next_vy != 0)) begin
+                    next_vy = next_vy + GRAVITY_ACCEL;
+                end else begin
+                    next_vy = 0;
+                end
 
                 if (next_vy > MAX_FALL_SPEED) begin
                     next_vy = MAX_FALL_SPEED;
                 end
+            end
 
-                if (next_y >= GROUND_Y) begin
-                    next_y = GROUND_Y;
-                    next_vy = 0;
-                end
+            player_right_next = next_x + PLAYER_WIDTH;
+            player_bottom_next = next_y + PLAYER_HEIGHT;
+
+            if ((player_bottom_now <= platform0_y) &&
+                (player_bottom_next >= platform0_y) &&
+                (next_vy >= 0) &&
+                (next_x < platform0_x + platform0_w) &&
+                (player_right_next > platform0_x)) begin
+                next_y = platform0_y - PLAYER_HEIGHT;
+                next_vy = 0;
+            end else if ((player_y >= platform0_y + platform0_h) &&
+                         (next_y < platform0_y + platform0_h) &&
+                         (player_x < platform0_x + platform0_w) &&
+                         (player_right_next > platform0_x)) begin
+                next_y = platform0_y + platform0_h;
+                next_vy = 0;
+            end
+
+            player_bottom_next = next_y + PLAYER_HEIGHT;
+
+            if ((player_bottom_now <= platform1_y) &&
+                (player_bottom_next >= platform1_y) &&
+                (next_vy >= 0) &&
+                (next_x < platform1_x + platform1_w) &&
+                (player_right_next > platform1_x)) begin
+                next_y = platform1_y - PLAYER_HEIGHT;
+                next_vy = 0;
+            end else if ((player_y >= platform1_y + platform1_h) &&
+                         (next_y < platform1_y + platform1_h) &&
+                         (player_x < platform1_x + platform1_w) &&
+                         (player_right_next > platform1_x)) begin
+                next_y = platform1_y + platform1_h;
+                next_vy = 0;
+            end
+
+            if (next_y >= ground_player_y) begin
+                next_y = ground_player_y;
+                next_vy = 0;
             end
 
             player_x <= next_x[9:0];

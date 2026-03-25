@@ -2,13 +2,13 @@
 
 `fpga-mario-vga` is a teaching-oriented FPGA project that grows a simple Mario-style platformer one phase at a time. It starts from the same overall flow as [`StevenFAU/FPGAHelloWorld`](https://github.com/StevenFAU/FPGAHelloWorld): a small Verilog-2001 codebase, a Makefile-driven simulation habit, and a Vivado Tcl script that recreates the project from scratch.
 
-Phase 3 adds the first vertical physics. The project now supports gravity, jumping, and stable landing on the ground while keeping the implementation frame-based, integer-only, and easy to extend.
+Phase 4 turns the visible platforms into actual level geometry. The project now supports landing on platforms and simple side and underside collision behavior while keeping the logic small and readable.
 
 ## Project Overview
 
 Goal: build a fixed-screen Mario-like platformer over VGA with simple rectangle graphics first, then extend it gradually toward scrolling, enemies, collectibles, sprite ROMs, animation, and audio.
 
-Current Phase: `Phase 3 - Gravity and jumping`
+Current Phase: `Phase 4 - Platforms and collision`
 
 Current behavior:
 - VGA timing pipeline is active.
@@ -16,7 +16,8 @@ Current behavior:
 - The player rectangle can move left and right.
 - Gravity pulls the player downward when airborne.
 - Jumping works from the ground only.
-- Landing on the ground resets the vertical state cleanly.
+- Landing works on the ground and on platforms.
+- Simple platform underside and side blocking are active.
 
 ## Hardware Target
 
@@ -67,6 +68,7 @@ Implemented so far:
 - frame-based vertical velocity and gravity
 - jump impulse from grounded state
 - ground landing with no double-jump
+- platform landing and simple rectangle collision
 - fixed scene layout module for ground, platforms, and goal
 - rectangle-based renderer
 - top-level integration module for the game project
@@ -74,7 +76,6 @@ Implemented so far:
 - Vivado Tcl project creation flow
 
 Not implemented yet:
-- collision
 - win/lose logic
 
 ## Build Instructions
@@ -105,7 +106,7 @@ make sim_top
 
 The current simulation set checks:
 - VGA timing behavior
-- game-state movement, jump, landing, and no-double-jump behavior
+- game-state movement, jump, landing, no-double-jump behavior, and platform collisions
 - representative top-level rendered colors
 
 The top-level rendering checks cover:
@@ -133,7 +134,7 @@ This keeps the initial renderer easy to understand and gives later phases a stab
 Rendering is intentionally simple:
 
 - `scene_layout.v` defines the fixed world rectangles
-- `game_state.v` currently provides horizontal movement, vertical velocity, gravity, and ground landing
+- `game_state.v` currently provides horizontal movement, vertical velocity, gravity, and simple collision resolution against the fixed scene geometry
 - `input_sync.v` synchronizes button inputs into the pixel-clock domain
 - `renderer.v` composites rectangles in priority order
 
@@ -169,13 +170,20 @@ Phase 3 keeps the vertical physics deliberately small and readable:
 - landing snaps the player back to the ground height and clears vertical speed
 - pressing jump in the air does not create a second jump
 
-Current limitation:
-- only the ground participates in collision during this phase
-- platforms are still visual geometry only and will become collidable in Phase 4
+## Collision Model
+
+Phase 4 keeps collision deliberately simple and rectangle-based:
+
+- the same fixed scene geometry is used for both rendering and gameplay
+- the player can land on the top of each platform
+- jumping into the underside of a platform stops upward motion
+- moving into a platform from the side clamps the player to the edge
+- collision is still based on a few named rectangles, not a full tile map yet
+
+This is enough to make the level feel physically consistent without overcomplicating the first playable foundation.
 
 ## Roadmap / Next Steps
 
-- Phase 3: add gravity, jumping, and ground collision
 - Phase 4: add platform collision and simple level geometry
 - Phase 5: create a minimal playable fixed-screen prototype
 
@@ -184,5 +192,5 @@ Current limitation:
 - Hardware behavior beyond basic synthesis setup is not yet verified on a physical board.
 - The button pin assignments for left/right/up were added for the planned control scheme and should be checked against the exact board revision during hardware bring-up.
 - Button inputs are synchronized but not debounced yet; held controls behave sensibly in simulation, but hardware feel may still need refinement later.
-- Platform rectangles are visible but do not affect physics yet.
-- See [`docs/phase-00.md`](docs/phase-00.md), [`docs/phase-01.md`](docs/phase-01.md), [`docs/phase-02.md`](docs/phase-02.md), and [`docs/phase-03.md`](docs/phase-03.md) for phase notes.
+- The level geometry is still hard-coded as a few named rectangles; Phase 5 can build gameplay on that, and later work can convert it into a tile/block representation if needed.
+- See [`docs/phase-00.md`](docs/phase-00.md), [`docs/phase-01.md`](docs/phase-01.md), [`docs/phase-02.md`](docs/phase-02.md), [`docs/phase-03.md`](docs/phase-03.md), and [`docs/phase-04.md`](docs/phase-04.md) for phase notes.
