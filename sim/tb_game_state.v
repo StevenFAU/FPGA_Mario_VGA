@@ -226,12 +226,23 @@ module tb_game_state;
             errors = errors + 1;
         end
 
+        seed_state_and_tick(10'd284, 10'd312, 11'sd0, 1'b0, 1'b1, 1'b0);
+        if (player_y !== 10'd313) begin
+            $display("FAIL: stepping off a platform should start falling immediately, got y=%0d", player_y);
+            errors = errors + 1;
+        end
+
+        if (uut.player_vy !== 1) begin
+            $display("FAIL: stepping off a platform should start gravity immediately, got vy=%0d", uut.player_vy);
+            errors = errors + 1;
+        end
+
         uut.player_x = 10'd548;
         uut.player_y = 10'd400;
         uut.player_vy = 11'sd0;
-        seed_state_and_tick(10'd548, 10'd400, 11'sd0, 1'b1, 1'b0, 1'b0);
+        seed_state_and_tick(10'd544, 10'd400, 11'sd0, 1'b0, 1'b1, 1'b0);
         if (game_won !== 1'b1) begin
-            $display("FAIL: touching the goal should set game_won");
+            $display("FAIL: moving into the goal should set game_won in the same frame");
             errors = errors + 1;
         end
 

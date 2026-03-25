@@ -50,12 +50,17 @@ module game_state (
     integer player_bottom_now;
     integer player_right_next;
     integer player_bottom_next;
+    integer player_bottom_final;
     integer ground_player_y;
     reg standing_on_ground;
     reg standing_on_platform0;
     reg standing_on_platform1;
     reg grounded_now;
     reg goal_reached;
+    reg next_standing_on_platform0;
+    reg next_standing_on_platform1;
+    reg next_grounded_after_move;
+    reg goal_reached_next;
 
     scene_layout u_scene_layout (
         .ground_x(ground_x),
@@ -116,7 +121,7 @@ module game_state (
                 (player_y < goal_y + goal_h) &&
                 (player_y + PLAYER_HEIGHT > goal_y);
 
-            if (game_won || goal_reached) begin
+            if (game_won) begin
                 game_won <= 1'b1;
                 player_x <= player_x;
                 player_y <= player_y;
@@ -165,16 +170,38 @@ module game_state (
                     end
                 end
 
-                if (grounded_now && btn_up) begin
+                player_right_next = next_x + PLAYER_WIDTH;
+
+                next_standing_on_platform0 =
+                    (player_y == (platform0_y - PLAYER_HEIGHT)) &&
+                    (next_x < platform0_x + platform0_w) &&
+                    (player_right_next > platform0_x);
+
+                next_standing_on_platform1 =
+                    (player_y == (platform1_y - PLAYER_HEIGHT)) &&
+                    (next_x < platform1_x + platform1_w) &&
+                    (player_right_next > platform1_x);
+
+                next_grounded_after_move =
+                    standing_on_ground ||
+                    next_standing_on_platform0 ||
+                    next_standing_on_platform1;
+
+                if (next_grounded_after_move && btn_up) begin
                     next_vy = JUMP_VELOCITY;
                     next_y = player_y + JUMP_VELOCITY;
                 end else begin
-                    next_y = next_y + next_vy;
-
-                    if (!grounded_now || (next_vy != 0)) begin
-                        next_vy = next_vy + GRAVITY_ACCEL;
+                    if (grounded_now && !next_grounded_after_move && (next_vy == 0)) begin
+                        next_vy = GRAVITY_ACCEL;
+                        next_y = next_y + GRAVITY_ACCEL;
                     end else begin
-                        next_vy = 0;
+                        next_y = next_y + next_vy;
+
+                        if (!next_grounded_after_move || (next_vy != 0)) begin
+                            next_vy = next_vy + GRAVITY_ACCEL;
+                        end else begin
+                            next_vy = 0;
+                        end
                     end
 
                     if (next_vy > MAX_FALL_SPEED) begin
@@ -182,7 +209,6 @@ module game_state (
                     end
                 end
 
-                player_right_next = next_x + PLAYER_WIDTH;
                 player_bottom_next = next_y + PLAYER_HEIGHT;
 
                 if ((player_bottom_now <= platform0_y) &&
@@ -222,12 +248,28 @@ module game_state (
                     next_vy = 0;
                 end
 
-                game_won <= 1'b0;
-                player_x <= next_x[9:0];
-                player_y <= next_y[9:0];
-                player_w <= player_w;
-                player_h <= player_h;
-                player_vy <= next_vy[10:0];
+                player_bottom_final = next_y + PLAYER_HEIGHT;
+                goal_reached_next =
+                    (next_x < goal_x + goal_w) &&
+                    (player_right_next > goal_x) &&
+                    (next_y < goal_y + goal_h) &&
+                    (player_bottom_final > goal_y);
+
+                if (goal_reached || goal_reached_next) begin
+                    game_won <= 1'b1;
+                    player_x <= next_x[9:0];
+                    player_y <= next_y[9:0];
+                    player_w <= player_w;
+                    player_h <= player_h;
+                    player_vy <= 11'sd0;
+                end else begin
+                    game_won <= 1'b0;
+                    player_x <= next_x[9:0];
+                    player_y <= next_y[9:0];
+                    player_w <= player_w;
+                    player_h <= player_h;
+                    player_vy <= next_vy[10:0];
+                end
             end
         end
     end
