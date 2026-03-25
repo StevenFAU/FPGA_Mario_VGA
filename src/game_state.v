@@ -16,7 +16,7 @@ module game_state (
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             player_x <= 10'd96;
-            player_y <= 10'd368;
+            player_y <= 10'd400;
             player_w <= 10'd24;
             player_h <= 10'd32;
         end else if (frame_tick) begin
@@ -28,4 +28,3 @@ module game_state (
     end
 
 endmodule
-

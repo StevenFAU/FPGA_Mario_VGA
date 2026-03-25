@@ -6,6 +6,7 @@ SRCS = \
 	src/clk_div.v \
 	src/vga_timing.v \
 	src/frame_tick.v \
+	src/scene_layout.v \
 	src/game_state.v \
 	src/renderer.v \
 	src/top_mario_game.v
@@ -35,4 +36,3 @@ vivado:
 
 clean:
 	rm -f *.out *.vcd
-

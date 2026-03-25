@@ -15,6 +15,25 @@ module tb_top_mario_game;
 
     integer errors;
 
+    task expect_color;
+        input [9:0] sample_x;
+        input [9:0] sample_y;
+        input [3:0] expected_r;
+        input [3:0] expected_g;
+        input [3:0] expected_b;
+        input [255:0] label;
+        begin
+            wait (uut.pixel_x == sample_x && uut.pixel_y == sample_y);
+            #1;
+            if ((vga_r !== expected_r) || (vga_g !== expected_g) || (vga_b !== expected_b)) begin
+                $display("FAIL: %0s at (%0d,%0d) expected RGB=%0h%0h%0h got %0h%0h%0h",
+                         label, sample_x, sample_y, expected_r, expected_g, expected_b,
+                         vga_r, vga_g, vga_b);
+                errors = errors + 1;
+            end
+        end
+    endtask
+
     top_mario_game uut (
         .clk_100mhz(clk_100mhz),
         .btn_left(btn_left),
@@ -44,10 +63,18 @@ module tb_top_mario_game;
         #100;
         btn_center = 1'b0;
 
-        repeat (2000) @(posedge clk_100mhz);
+        wait (uut.video_on == 1'b1);
+        expect_color(10'd40,  10'd40,  4'h6, 4'hB, 4'hF, "sky");
+        expect_color(10'd200, 10'd350, 4'h2, 4'hA, 4'h2, "platform 0");
+        expect_color(10'd380, 10'd290, 4'h2, 4'hA, 4'h2, "platform 1");
+        expect_color(10'd570, 10'd390, 4'hF, 4'hE, 4'h2, "goal");
+        expect_color(10'd100, 10'd410, 4'hF, 4'h3, 4'h3, "player");
+        expect_color(10'd300, 10'd440, 4'h8, 4'h4, 4'h1, "ground");
 
+        wait (uut.pixel_x == 10'd700);
+        #1;
         if ((vga_r !== 4'h0) || (vga_g !== 4'h0) || (vga_b !== 4'h0)) begin
-            $display("FAIL: Phase 0 renderer should currently output a black frame");
+            $display("FAIL: blanking region should be black");
             errors = errors + 1;
         end
 
@@ -71,4 +98,3 @@ module tb_top_mario_game;
     end
 
 endmodule
-

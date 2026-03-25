@@ -2,19 +2,19 @@
 
 `fpga-mario-vga` is a teaching-oriented FPGA project that grows a simple Mario-style platformer one phase at a time. It starts from the same overall flow as [`StevenFAU/FPGAHelloWorld`](https://github.com/StevenFAU/FPGAHelloWorld): a small Verilog-2001 codebase, a Makefile-driven simulation habit, and a Vivado Tcl script that recreates the project from scratch.
 
-Phase 0 focuses on the foundation. The repo now contains a clean game-oriented scaffold, a working VGA pipeline, a placeholder game state module, Icarus Verilog smoke tests, and a reproducible Vivado project setup for the Nexys A7-100T.
+Phase 1 adds the first visible game scene. The project now draws a fixed-screen platformer layout using only colored rectangles: sky, ground, platforms, a player block, and a goal block.
 
 ## Project Overview
 
 Goal: build a fixed-screen Mario-like platformer over VGA with simple rectangle graphics first, then extend it gradually toward scrolling, enemies, collectibles, sprite ROMs, animation, and audio.
 
-Current Phase: `Phase 0 - Scaffold from source repo`
+Current Phase: `Phase 1 - Static game screen`
 
 Current behavior:
-- VGA timing pipeline is present.
-- Top-level game module is present.
-- Renderer currently outputs a black active frame as a placeholder.
-- Player state outputs are scaffolded but not yet rendered or controlled.
+- VGA timing pipeline is active.
+- A rectangle compositor draws the static scene.
+- The player rectangle is visible at a fixed starting position.
+- The level is fixed-screen and non-interactive for now.
 
 ## Hardware Target
 
@@ -52,18 +52,18 @@ Phase 0 status:
 
 ## Current Status
 
-Implemented in Phase 0:
+Implemented so far:
 - clock divider from 100 MHz to 25 MHz VGA pixel clock
 - VGA timing generator
 - frame tick pulse for once-per-frame game updates
-- placeholder `game_state` module
-- placeholder `renderer` module
+- fixed player state scaffold
+- fixed scene layout module for ground, platforms, and goal
+- rectangle-based renderer
 - top-level integration module for the game project
-- simulation smoke tests
+- simulation checks for VGA timing and representative scene colors
 - Vivado Tcl project creation flow
 
 Not implemented yet:
-- visible scene rendering
 - input handling
 - movement
 - gravity
@@ -95,9 +95,45 @@ make sim_timing
 make sim_top
 ```
 
+The Phase 1 top-level testbench checks representative pixels for:
+- sky color
+- platform colors
+- goal color
+- player color
+- ground color
+- blanking behavior
+
+## Current Screen Layout
+
+The current fixed-screen scene uses simple rectangles only:
+
+- sky background fills the visible area
+- ground strip spans the bottom of the screen
+- two floating platforms provide future jump targets
+- player rectangle starts on the ground near the left side
+- goal rectangle sits near the right side
+
+This keeps the initial renderer easy to understand and gives later phases a stable visual target for movement and collision work.
+
+## Rendering Approach
+
+Rendering is intentionally simple:
+
+- `scene_layout.v` defines the fixed world rectangles
+- `game_state.v` currently provides the player rectangle
+- `renderer.v` composites rectangles in priority order
+
+Current priority order:
+- sky
+- ground
+- platforms
+- goal
+- player
+
+That separation keeps the video path readable and gives later collision logic a clear place to reuse scene geometry.
+
 ## Roadmap / Next Steps
 
-- Phase 1: render a static platformer scene with rectangles
 - Phase 2: add synchronized inputs and horizontal movement
 - Phase 3: add gravity, jumping, and ground collision
 - Phase 4: add platform collision and simple level geometry
@@ -107,5 +143,5 @@ make sim_top
 
 - Hardware behavior beyond basic synthesis setup is not yet verified on a physical board.
 - The button pin assignments for left/right/up were added for the planned control scheme and should be checked against the exact board revision during hardware bring-up.
-- See [`docs/phase-00.md`](docs/phase-00.md) for the Phase 0 adaptation notes.
-
+- The scene is visual only in this phase; controls are not active yet.
+- See [`docs/phase-00.md`](docs/phase-00.md) and [`docs/phase-01.md`](docs/phase-01.md) for phase notes.
