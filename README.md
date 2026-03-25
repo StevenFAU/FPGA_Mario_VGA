@@ -2,19 +2,20 @@
 
 `fpga-mario-vga` is a teaching-oriented FPGA project that grows a simple Mario-style platformer one phase at a time. It starts from the same overall flow as [`StevenFAU/FPGAHelloWorld`](https://github.com/StevenFAU/FPGAHelloWorld): a small Verilog-2001 codebase, a Makefile-driven simulation habit, and a Vivado Tcl script that recreates the project from scratch.
 
-Phase 1 adds the first visible game scene. The project now draws a fixed-screen platformer layout using only colored rectangles: sky, ground, platforms, a player block, and a goal block.
+Phase 2 adds the first player interaction. The project now supports synchronized left/right button input and frame-based horizontal movement while keeping the game fixed-screen and rectangle-based.
 
 ## Project Overview
 
 Goal: build a fixed-screen Mario-like platformer over VGA with simple rectangle graphics first, then extend it gradually toward scrolling, enemies, collectibles, sprite ROMs, animation, and audio.
 
-Current Phase: `Phase 1 - Static game screen`
+Current Phase: `Phase 2 - Input and horizontal movement`
 
 Current behavior:
 - VGA timing pipeline is active.
 - A rectangle compositor draws the static scene.
-- The player rectangle is visible at a fixed starting position.
-- The level is fixed-screen and non-interactive for now.
+- The player rectangle can move left and right.
+- Movement updates once per frame and clamps to screen bounds.
+- The level is still fixed-screen with no gravity yet.
 
 ## Hardware Target
 
@@ -46,9 +47,11 @@ Planned controls for later phases:
 - `btn_up` = jump
 - `btn_center` = reset
 
-Phase 0 status:
-- Only reset is meaningful today.
-- Movement and jumping will arrive in later phases.
+Current controls:
+- `btn_left` = move left
+- `btn_right` = move right
+- `btn_up` = reserved for jump in Phase 3
+- `btn_center` = reset
 
 ## Current Status
 
@@ -57,15 +60,16 @@ Implemented so far:
 - VGA timing generator
 - frame tick pulse for once-per-frame game updates
 - fixed player state scaffold
+- synchronized button inputs for left, right, and up
+- frame-based horizontal movement
+- screen-edge clamping for player movement
 - fixed scene layout module for ground, platforms, and goal
 - rectangle-based renderer
 - top-level integration module for the game project
-- simulation checks for VGA timing and representative scene colors
+- simulation checks for VGA timing, movement behavior, and representative scene colors
 - Vivado Tcl project creation flow
 
 Not implemented yet:
-- input handling
-- movement
 - gravity
 - collision
 - win/lose logic
@@ -92,6 +96,7 @@ Run one testbench:
 
 ```bash
 make sim_timing
+make sim_game_state
 make sim_top
 ```
 
@@ -113,14 +118,15 @@ The current fixed-screen scene uses simple rectangles only:
 - player rectangle starts on the ground near the left side
 - goal rectangle sits near the right side
 
-This keeps the initial renderer easy to understand and gives later phases a stable visual target for movement and collision work.
+This keeps the initial renderer easy to understand and gives later phases a stable visual target for movement, jumping, and collision work.
 
 ## Rendering Approach
 
 Rendering is intentionally simple:
 
 - `scene_layout.v` defines the fixed world rectangles
-- `game_state.v` currently provides the player rectangle
+- `game_state.v` currently provides the player rectangle and horizontal movement
+- `input_sync.v` synchronizes button inputs into the pixel-clock domain
 - `renderer.v` composites rectangles in priority order
 
 Current priority order:
@@ -131,6 +137,18 @@ Current priority order:
 - player
 
 That separation keeps the video path readable and gives later collision logic a clear place to reuse scene geometry.
+
+## Movement Model
+
+Phase 2 movement is intentionally basic:
+
+- left and right buttons are synchronized through two flip-flops
+- player position updates on a once-per-frame tick
+- movement speed is a fixed integer step
+- opposite left/right inputs cancel each other
+- player position clamps to the visible screen width
+
+This is simple enough for a student to follow and stable enough to build gravity and jumping on top of in the next phase.
 
 ## Roadmap / Next Steps
 
@@ -143,5 +161,5 @@ That separation keeps the video path readable and gives later collision logic a 
 
 - Hardware behavior beyond basic synthesis setup is not yet verified on a physical board.
 - The button pin assignments for left/right/up were added for the planned control scheme and should be checked against the exact board revision during hardware bring-up.
-- The scene is visual only in this phase; controls are not active yet.
-- See [`docs/phase-00.md`](docs/phase-00.md) and [`docs/phase-01.md`](docs/phase-01.md) for phase notes.
+- Button inputs are synchronized but not debounced yet; that is acceptable for held left/right movement, but jump handling may need tighter treatment in a later phase.
+- See [`docs/phase-00.md`](docs/phase-00.md), [`docs/phase-01.md`](docs/phase-01.md), and [`docs/phase-02.md`](docs/phase-02.md) for phase notes.

@@ -23,6 +23,9 @@ module top_mario_game (
     wire [9:0] player_y;
     wire [9:0] player_w;
     wire [9:0] player_h;
+    wire btn_left_sync;
+    wire btn_right_sync;
+    wire btn_up_sync;
 
     assign rst_n = ~btn_center;
 
@@ -50,13 +53,34 @@ module top_mario_game (
         .tick(frame_start)
     );
 
+    input_sync u_sync_left (
+        .clk(clk_25mhz),
+        .rst_n(rst_n),
+        .async_in(btn_left),
+        .sync_out(btn_left_sync)
+    );
+
+    input_sync u_sync_right (
+        .clk(clk_25mhz),
+        .rst_n(rst_n),
+        .async_in(btn_right),
+        .sync_out(btn_right_sync)
+    );
+
+    input_sync u_sync_up (
+        .clk(clk_25mhz),
+        .rst_n(rst_n),
+        .async_in(btn_up),
+        .sync_out(btn_up_sync)
+    );
+
     game_state u_game_state (
         .clk(clk_25mhz),
         .rst_n(rst_n),
         .frame_tick(frame_start),
-        .btn_left(btn_left),
-        .btn_right(btn_right),
-        .btn_up(btn_up),
+        .btn_left(btn_left_sync),
+        .btn_right(btn_right_sync),
+        .btn_up(btn_up_sync),
         .player_x(player_x),
         .player_y(player_y),
         .player_w(player_w),
@@ -77,4 +101,3 @@ module top_mario_game (
     );
 
 endmodule
-

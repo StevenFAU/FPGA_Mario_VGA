@@ -71,6 +71,17 @@ module tb_top_mario_game;
         expect_color(10'd100, 10'd410, 4'hF, 4'h3, 4'h3, "player");
         expect_color(10'd300, 10'd440, 4'h8, 4'h4, 4'h1, "ground");
 
+        btn_right = 1'b1;
+        repeat (900000) @(posedge clk_100mhz);
+        btn_right = 1'b0;
+
+        if (uut.u_game_state.player_x <= 10'd96) begin
+            $display("FAIL: player_x did not move right");
+            errors = errors + 1;
+        end
+
+        expect_color(uut.u_game_state.player_x + 10'd4, 10'd410, 4'hF, 4'h3, 4'h3, "moved player");
+
         wait (uut.pixel_x == 10'd700);
         #1;
         if ((vga_r !== 4'h0) || (vga_g !== 4'h0) || (vga_b !== 4'h0)) begin
