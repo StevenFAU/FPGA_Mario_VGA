@@ -1,0 +1,7 @@
+*.jou
+*.log
+*.out
+*.vcd
+.Xil/
+vivado_build/
+
