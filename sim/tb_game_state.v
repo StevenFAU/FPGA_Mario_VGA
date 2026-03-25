@@ -15,6 +15,11 @@ module tb_game_state;
 
     integer errors;
     integer i;
+    integer peak_y;
+    integer prev_y;
+    integer prev_vy;
+    integer expected_y;
+    integer expected_vy;
 
     game_state uut (
         .clk(clk),
@@ -120,6 +125,58 @@ module tb_game_state;
             errors = errors + 1;
         end
 
+        btn_up = 1'b1;
+        pulse_frame_tick;
+        btn_up = 1'b0;
+
+        if (player_y >= 10'd400) begin
+            $display("FAIL: jump should move player upward from the ground, got y=%0d", player_y);
+            errors = errors + 1;
+        end
+
+        peak_y = player_y;
+        for (i = 0; i < 6; i = i + 1) begin
+            pulse_frame_tick;
+            if (player_y < peak_y) begin
+                peak_y = player_y;
+            end
+        end
+
+        prev_y = player_y;
+        prev_vy = uut.player_vy;
+        expected_y = prev_y + prev_vy;
+        expected_vy = prev_vy + 1;
+
+        btn_up = 1'b1;
+        pulse_frame_tick;
+        btn_up = 1'b0;
+
+        if (player_y !== expected_y) begin
+            $display("FAIL: midair jump changed vertical position unexpectedly, expected %0d got %0d",
+                     expected_y, player_y);
+            errors = errors + 1;
+        end
+
+        if (uut.player_vy !== expected_vy) begin
+            $display("FAIL: midair jump changed vertical velocity unexpectedly, expected %0d got %0d",
+                     expected_vy, uut.player_vy);
+            errors = errors + 1;
+        end
+
+        for (i = 0; i < 40; i = i + 1) begin
+            pulse_frame_tick;
+        end
+
+        if (player_y !== 10'd400) begin
+            $display("FAIL: landing expected y=400, got %0d", player_y);
+            errors = errors + 1;
+        end
+
+        if (uut.player_vy !== 0) begin
+            $display("FAIL: vertical velocity should be zero after landing, got %0d", uut.player_vy);
+            errors = errors + 1;
+        end
+
         if (player_w !== 10'd24 || player_h !== 10'd32) begin
             $display("FAIL: player dimensions changed unexpectedly");
             errors = errors + 1;
@@ -135,4 +192,3 @@ module tb_game_state;
     end
 
 endmodule
-

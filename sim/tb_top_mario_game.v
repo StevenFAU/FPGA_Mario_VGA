@@ -82,6 +82,15 @@ module tb_top_mario_game;
 
         expect_color(uut.u_game_state.player_x + 10'd4, 10'd410, 4'hF, 4'h3, 4'h3, "moved player");
 
+        btn_up = 1'b1;
+        repeat (900000) @(posedge clk_100mhz);
+        btn_up = 1'b0;
+
+        if (uut.u_game_state.player_y >= 10'd400) begin
+            $display("FAIL: player_y did not leave the ground during jump");
+            errors = errors + 1;
+        end
+
         wait (uut.pixel_x == 10'd700);
         #1;
         if ((vga_r !== 4'h0) || (vga_g !== 4'h0) || (vga_b !== 4'h0)) begin
