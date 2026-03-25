@@ -23,6 +23,7 @@ module top_mario_game (
     wire [9:0] player_y;
     wire [9:0] player_w;
     wire [9:0] player_h;
+    wire game_won;
     wire btn_left_sync;
     wire btn_right_sync;
     wire btn_up_sync;
@@ -81,6 +82,7 @@ module top_mario_game (
         .btn_left(btn_left_sync),
         .btn_right(btn_right_sync),
         .btn_up(btn_up_sync),
+        .game_won(game_won),
         .player_x(player_x),
         .player_y(player_y),
         .player_w(player_w),
@@ -91,6 +93,7 @@ module top_mario_game (
         .video_on(video_on),
         .pixel_x(pixel_x),
         .pixel_y(pixel_y),
+        .game_won(game_won),
         .player_x(player_x),
         .player_y(player_y),
         .player_w(player_w),

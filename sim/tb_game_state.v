@@ -12,6 +12,7 @@ module tb_game_state;
     wire [9:0] player_y;
     wire [9:0] player_w;
     wire [9:0] player_h;
+    wire       game_won;
 
     integer errors;
     integer i;
@@ -28,6 +29,7 @@ module tb_game_state;
         .btn_left(btn_left),
         .btn_right(btn_right),
         .btn_up(btn_up),
+        .game_won(game_won),
         .player_x(player_x),
         .player_y(player_y),
         .player_w(player_w),
@@ -135,16 +137,16 @@ module tb_game_state;
             errors = errors + 1;
         end
 
-        btn_right = 1'b1;
-        for (i = 0; i < 200; i = i + 1) begin
-            pulse_frame_tick;
-        end
-        btn_right = 1'b0;
+        seed_state_and_tick(10'd612, 10'd200, 11'sd0, 1'b0, 1'b1, 1'b0);
 
         if (player_x !== 10'd616) begin
             $display("FAIL: right clamp expected x=616, got %0d", player_x);
             errors = errors + 1;
         end
+
+        uut.player_x = 10'd96;
+        uut.player_y = 10'd400;
+        uut.player_vy = 11'sd0;
 
         btn_up = 1'b1;
         pulse_frame_tick;
@@ -221,6 +223,23 @@ module tb_game_state;
         seed_state_and_tick(10'd133, 10'd320, 11'sd0, 1'b0, 1'b1, 1'b0);
         if (player_x !== 10'd136) begin
             $display("FAIL: platform side collision expected x=136, got %0d", player_x);
+            errors = errors + 1;
+        end
+
+        uut.player_x = 10'd548;
+        uut.player_y = 10'd400;
+        uut.player_vy = 11'sd0;
+        seed_state_and_tick(10'd548, 10'd400, 11'sd0, 1'b1, 1'b0, 1'b0);
+        if (game_won !== 1'b1) begin
+            $display("FAIL: touching the goal should set game_won");
+            errors = errors + 1;
+        end
+
+        btn_left = 1'b1;
+        pulse_frame_tick;
+        btn_left = 1'b0;
+        if (player_x !== 10'd548) begin
+            $display("FAIL: player should freeze after winning, got x=%0d", player_x);
             errors = errors + 1;
         end
 

@@ -2,13 +2,13 @@
 
 `fpga-mario-vga` is a teaching-oriented FPGA project that grows a simple Mario-style platformer one phase at a time. It starts from the same overall flow as [`StevenFAU/FPGAHelloWorld`](https://github.com/StevenFAU/FPGAHelloWorld): a small Verilog-2001 codebase, a Makefile-driven simulation habit, and a Vivado Tcl script that recreates the project from scratch.
 
-Phase 4 turns the visible platforms into actual level geometry. The project now supports landing on platforms and simple side and underside collision behavior while keeping the logic small and readable.
+Phase 5 turns the project into a small playable prototype. The goal area now triggers a win state, reset restarts the game, and the renderer gives simple visual feedback when the level is completed.
 
 ## Project Overview
 
 Goal: build a fixed-screen Mario-like platformer over VGA with simple rectangle graphics first, then extend it gradually toward scrolling, enemies, collectibles, sprite ROMs, animation, and audio.
 
-Current Phase: `Phase 4 - Platforms and collision`
+Current Phase: `Phase 5 - Minimal playable level`
 
 Current behavior:
 - VGA timing pipeline is active.
@@ -18,6 +18,8 @@ Current behavior:
 - Jumping works from the ground only.
 - Landing works on the ground and on platforms.
 - Simple platform underside and side blocking are active.
+- Reaching the goal rectangle triggers a latched win state.
+- `btn_center` resets the game back to the starting state.
 
 ## Hardware Target
 
@@ -69,6 +71,9 @@ Implemented so far:
 - jump impulse from grounded state
 - ground landing with no double-jump
 - platform landing and simple rectangle collision
+- goal detection and latched win state
+- reset/restart flow through the existing reset button
+- simple win-state screen feedback
 - fixed scene layout module for ground, platforms, and goal
 - rectangle-based renderer
 - top-level integration module for the game project
@@ -76,7 +81,7 @@ Implemented so far:
 - Vivado Tcl project creation flow
 
 Not implemented yet:
-- win/lose logic
+- lose logic
 
 ## Build Instructions
 
@@ -106,7 +111,7 @@ make sim_top
 
 The current simulation set checks:
 - VGA timing behavior
-- game-state movement, jump, landing, no-double-jump behavior, and platform collisions
+- game-state movement, jump, landing, no-double-jump behavior, platform collisions, and goal/win behavior
 - representative top-level rendered colors
 
 The top-level rendering checks cover:
@@ -127,16 +132,16 @@ The current fixed-screen scene uses simple rectangles only:
 - player rectangle starts on the ground near the left side
 - goal rectangle sits near the right side
 
-This keeps the initial renderer easy to understand and gives later phases a stable visual target for movement, jumping, and collision work.
+This keeps the renderer easy to understand and gives the current prototype a clear start-to-goal loop.
 
 ## Rendering Approach
 
 Rendering is intentionally simple:
 
 - `scene_layout.v` defines the fixed world rectangles
-- `game_state.v` currently provides horizontal movement, vertical velocity, gravity, and simple collision resolution against the fixed scene geometry
+- `game_state.v` currently provides horizontal movement, vertical velocity, gravity, simple collision resolution, and goal/win state handling
 - `input_sync.v` synchronizes button inputs into the pixel-clock domain
-- `renderer.v` composites rectangles in priority order
+- `renderer.v` composites rectangles in priority order and changes palette on win
 
 Current priority order:
 - sky
@@ -182,10 +187,23 @@ Phase 4 keeps collision deliberately simple and rectangle-based:
 
 This is enough to make the level feel physically consistent without overcomplicating the first playable foundation.
 
+## How To Play
+
+- Move with `btn_left` and `btn_right`
+- Jump with `btn_up`
+- Reach the goal rectangle on the right side of the level
+- Press `btn_center` to restart at any time
+
+Current win behavior:
+- touching the goal latches a win state
+- player movement freezes after winning
+- the scene palette shifts to show the completed state
+
 ## Roadmap / Next Steps
 
-- Phase 4: add platform collision and simple level geometry
-- Phase 5: create a minimal playable fixed-screen prototype
+- current: minimal playable fixed-screen prototype
+- next: hazards, lose state, or a slightly richer game state machine
+- later: scrolling camera, enemies, collectibles, sprite ROMs, animation, and audio
 
 ## Notes
 
@@ -193,4 +211,5 @@ This is enough to make the level feel physically consistent without overcomplica
 - The button pin assignments for left/right/up were added for the planned control scheme and should be checked against the exact board revision during hardware bring-up.
 - Button inputs are synchronized but not debounced yet; held controls behave sensibly in simulation, but hardware feel may still need refinement later.
 - The level geometry is still hard-coded as a few named rectangles; Phase 5 can build gameplay on that, and later work can convert it into a tile/block representation if needed.
-- See [`docs/phase-00.md`](docs/phase-00.md), [`docs/phase-01.md`](docs/phase-01.md), [`docs/phase-02.md`](docs/phase-02.md), [`docs/phase-03.md`](docs/phase-03.md), and [`docs/phase-04.md`](docs/phase-04.md) for phase notes.
+- There is no lose state or hazard handling yet.
+- See [`docs/phase-00.md`](docs/phase-00.md), [`docs/phase-01.md`](docs/phase-01.md), [`docs/phase-02.md`](docs/phase-02.md), [`docs/phase-03.md`](docs/phase-03.md), [`docs/phase-04.md`](docs/phase-04.md), and [`docs/phase-05.md`](docs/phase-05.md) for phase notes.

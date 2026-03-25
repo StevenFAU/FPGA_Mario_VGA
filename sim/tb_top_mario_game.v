@@ -91,6 +91,13 @@ module tb_top_mario_game;
             errors = errors + 1;
         end
 
+        uut.u_game_state.player_x = 10'd548;
+        uut.u_game_state.player_y = 10'd400;
+        uut.u_game_state.player_vy = 11'sd0;
+        wait (uut.u_game_state.game_won == 1'b1);
+        expect_color(10'd40,  10'd40,  4'hB, 4'hE, 4'h8, "win sky");
+        expect_color(10'd570, 10'd390, 4'h2, 4'hF, 4'h4, "win goal");
+
         wait (uut.pixel_x == 10'd700);
         #1;
         if ((vga_r !== 4'h0) || (vga_g !== 4'h0) || (vga_b !== 4'h0)) begin

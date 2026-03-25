@@ -4,6 +4,7 @@ module renderer (
     input  wire       video_on,
     input  wire [9:0] pixel_x,
     input  wire [9:0] pixel_y,
+    input  wire       game_won,
     input  wire [9:0] player_x,
     input  wire [9:0] player_y,
     input  wire [9:0] player_w,
@@ -28,6 +29,15 @@ module renderer (
     localparam [3:0] GOAL_R     = 4'hF;
     localparam [3:0] GOAL_G     = 4'hE;
     localparam [3:0] GOAL_B     = 4'h2;
+    localparam [3:0] WIN_SKY_R  = 4'hB;
+    localparam [3:0] WIN_SKY_G  = 4'hE;
+    localparam [3:0] WIN_SKY_B  = 4'h8;
+    localparam [3:0] WIN_GOAL_R = 4'h2;
+    localparam [3:0] WIN_GOAL_G = 4'hF;
+    localparam [3:0] WIN_GOAL_B = 4'h4;
+    localparam [3:0] WIN_PLAYER_R = 4'hF;
+    localparam [3:0] WIN_PLAYER_G = 4'hF;
+    localparam [3:0] WIN_PLAYER_B = 4'hF;
 
     wire [9:0] ground_x;
     wire [9:0] ground_y;
@@ -110,9 +120,15 @@ module renderer (
         blue_reg  = 4'h0;
 
         if (video_on) begin
-            red_reg   = SKY_R;
-            green_reg = SKY_G;
-            blue_reg  = SKY_B;
+            if (game_won) begin
+                red_reg   = WIN_SKY_R;
+                green_reg = WIN_SKY_G;
+                blue_reg  = WIN_SKY_B;
+            end else begin
+                red_reg   = SKY_R;
+                green_reg = SKY_G;
+                blue_reg  = SKY_B;
+            end
 
             if (ground_region) begin
                 red_reg   = GROUND_R;
@@ -127,15 +143,27 @@ module renderer (
             end
 
             if (goal_region) begin
-                red_reg   = GOAL_R;
-                green_reg = GOAL_G;
-                blue_reg  = GOAL_B;
+                if (game_won) begin
+                    red_reg   = WIN_GOAL_R;
+                    green_reg = WIN_GOAL_G;
+                    blue_reg  = WIN_GOAL_B;
+                end else begin
+                    red_reg   = GOAL_R;
+                    green_reg = GOAL_G;
+                    blue_reg  = GOAL_B;
+                end
             end
 
             if (player_region) begin
-                red_reg   = PLAYER_R;
-                green_reg = PLAYER_G;
-                blue_reg  = PLAYER_B;
+                if (game_won) begin
+                    red_reg   = WIN_PLAYER_R;
+                    green_reg = WIN_PLAYER_G;
+                    blue_reg  = WIN_PLAYER_B;
+                end else begin
+                    red_reg   = PLAYER_R;
+                    green_reg = PLAYER_G;
+                    blue_reg  = PLAYER_B;
+                end
             end
         end
     end
